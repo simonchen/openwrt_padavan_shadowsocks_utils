@@ -44,8 +44,9 @@ you should see the list of IP addresses same as the file /etc/shadowsocks/ignore
 
 I've often confused one thing that when Shadowsocks client started, *Why Skype constantly disconnecting / reconnecting when Shadowsocks client is running?*, I ever thought that it would be caused by DNS forwarding since I've already setup [DnsCrypt-proxy](https://wiki.openwrt.org/inbox/dnscrypt) service on OpenWRT, but it's not exactly, now I've figured out that Shadowsocks client / server might exist an issue that it doesn't support Skype communication as well, but I have no idea how to fix the code with it :), What I can do only is writing a script for avoiding that TCP/IP requests from Skype will be forwarding by Shadowsocks, to do this, we need to get the list of IPs that Skype requests on, then appending these IP list in 'ignore list', ignoring these IPs will help to resolve the connectivity issue.
 
-     - Where is these IPs from?
-     I've just ran Skype on my end, when the connectivity issue happened, 
+     - Where is these IPs from?
+     
+     I've just ran Skype on my end, when the connectivity issue happened, 
      I went to the Shadowsocks server then checking to see which TCP/IP connections staying on FIN_WAIT1/2 state, 
      this can be finished by command line below:
 
