@@ -47,7 +47,7 @@ I've often confused one thing that when Shadowsocks client started, *Why Skype c
      - Where are these IPs from?
      
      I've just ran Skype on my end, when the connectivity issue happened, 
-     I went to the Shadowsocks server then checking to see which TCP/IP connections staying on FIN_WAIT1/2 state, 
+     I went to the Shadowsocks server (or either router installed OpenWRT) then checking to see which TCP/IP connections often staying on FIN_WAIT1/2 state, 
      this can be finished by command line below:
 
      *netstat -a | grep FIN_WAIT*
@@ -55,6 +55,8 @@ I've often confused one thing that when Shadowsocks client started, *Why Skype c
      The results of TCP/IP connetions presented which target IPs were associated with FIN_WAIT1/2, 
      I've made testing on Google to check who's the owner of these IPs, all of them are belong to Microsoft! 
      meaning that Skype was interacting with those IPs through Shadowsocks, we need to add them in 'ignore list'.
+     
+     By the methodology, it's possible to modify / update the list of IPs by yourself.
 
 **Note**: skype_ipset.sh has been executed as a part of 2) update_ignore_list.sh, if you don't want to resolve the connectivity issue, you can remove it.
 
