@@ -13,7 +13,7 @@ The people who's located in China mainland and be forbidden visiting google.com,
 ## Usage
 Please put all .sh scripts in /root directory, then change their attributes as executable.
 
-*chmod 777 *.sh*
+*chmod 777 \*.sh*
 
 Copy cron job instructions in scheduled_tasks.txt to LUCI web interface > 'System' > 'Scheduled Tasks',
 Or you sign in OpenWRT system by SSH, then execute command line in console:
@@ -50,7 +50,7 @@ I've often confused one thing that when Shadowsocks client started, *Why Skype c
      I went to the Shadowsocks server (or either router installed OpenWRT) then checking to see which TCP/IP connections often staying on FIN_WAIT1/2 state, 
      this can be finished by command line below:
 
-     *netstat -a | grep FIN_WAIT*
+     netstat -a | grep FIN_WAIT
 
      The results of TCP/IP connetions presented which target IPs were associated with FIN_WAIT1/2, 
      I've made testing on Google to check who's the owner of these IPs, all of them are belong to Microsoft! 
