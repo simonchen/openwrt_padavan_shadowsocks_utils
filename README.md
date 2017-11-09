@@ -10,6 +10,18 @@ There is no warranty here, use these scripts at your own risk!
 These scripts will run on <a href="https://openwrt.org/">OpenWRT</a> (A lightweight <a href="http://lede-project.org">LEDE</a> linux system.
 The people who's located in China mainland and be forbidden visiting google.com, facebook.com, twitter.com, etc. have installed Shadowsocks client on his own OpenWRT system, this will be able to reach these inaccessible sites by Shadowsocks,  wiling to use these scripts helping himself to improve performance, resolve TCP/IP forwarding, keep watch over Shadowsocks runs normally, etc.
 
+<b>Usage</b>
+Please put all .sh scripts in /root directory, then change their attributes as executable.
+
+chmod 777 *.sh
+
+Copy cron job instructions in scheduled_tasks.txt to LUCI web interface > 'System' > 'Scheduled Tasks',
+Or you sign in OpenWRT system by SSH, then execute command line in console:
+
+crontab -e
+
+Then press 'i' key to insert cron job command lines in there, then press 'Esc' key & press 'Shift+:wq' to save / exit .
+
 <b>List of scripts</b>
 
 1) ss_watchdog.sh
