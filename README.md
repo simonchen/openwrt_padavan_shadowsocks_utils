@@ -1,4 +1,4 @@
-README!!!
+<font size=20>Utilities for Shadowsocks client</font>
 
 This repository covers some utility scripts for Shadowsocks client, it helps to improve the performance 
 and resolve some known issues for <a href="https://github.com/shadowsocks/openwrt-shadowsocks">Shadowsocks client</a> running on <a href="https://openwrt.org/">OpenWRT</a>.
