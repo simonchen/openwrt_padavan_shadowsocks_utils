@@ -20,7 +20,7 @@ Or you sign in OpenWRT system by SSH, then execute command line in console:
 
 crontab -e
 
-Then press 'i' key to insert cron job command lines in there, then press 'Esc' key & press 'Shift+:wq' to save / exit .
+Then press 'i' key to insert cron job command lines in there, then press 'Esc' key & press 'Shift + :', 'wq' to save / exit .
 
 <b>List of scripts</b>
 
