@@ -45,7 +45,9 @@ you should see the list of IP addresses same as the file /etc/shadowsocks/ignore
 I've often confused one thing that when Shadowsocks client started, <b>Why Skype sometimes keep connectivity as signing in</b> that I can't receive / send any messages, I ever thought that it would be caused by DNS forwarding since I've already setup DnsCrypt-proxy service on OpenWRT, but it's not, now I've found the solution avoiding this issue happens, that's the script that it does append these IP list in 'ignore list' (I will explain how come these IPs are from), ignoring these IPs will help to resolve the connectivity issue on Skype.
 
      - Where is these IPs from?
-     I've just ran Skype on my end, when connectivity issue happened, I went to the Shadowsocks server then checking to see which TCP/IP connections keep staying on FIN_WAIT1/2 state, this can be finished by command line:
+     I've just ran Skype on my end, when the connectivity issue happened, 
+     I went to the Shadowsocks server then checking to see which TCP/IP connections staying on FIN_WAIT1/2 state, 
+     this can be finished by command line below:
 
      *netstat -a | grep FIN_WAIT*
 
