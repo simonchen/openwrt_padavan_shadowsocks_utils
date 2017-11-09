@@ -1,5 +1,5 @@
 # Update ignore list used for ipset
-30    4     *     *     *     /root/update_ignore_list > /dev/null 2>&1
+30    4     *     *     *     /root/update_ignore_list.sh > /dev/null 2>&1
 
 # Watchdog for Shadowsocks
 */10 * * * * /root/ss_watchdog.sh >> /var/log/ss_watchdog.log 2>&1
