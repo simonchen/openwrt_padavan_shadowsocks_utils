@@ -26,4 +26,12 @@ echo '
 20.185.0.0/16
 13.0.0.0/8
 40.74.219.0/24
+#王者荣耀
+thirdqq.qlogo.cn
+portal.xunyou.mobi
+qq.com
+game.eve.mdt.qq.com
+game.str.mdt.qq.com
+awx.smoba.qq.com
+
 ' >> /etc/shadowsocks/ignore.list 
