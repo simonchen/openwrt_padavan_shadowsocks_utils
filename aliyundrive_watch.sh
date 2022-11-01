@@ -1,5 +1,5 @@
 #!/bin/sh
-# detecting if the child router is disconnected from parent router with http://192.168.0.1
+# detecting if aliyun drive service is down
 
 LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
 wget --spider --quiet http://admin:admin@192.168.123.1:8080
