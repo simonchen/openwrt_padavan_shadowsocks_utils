@@ -16,6 +16,7 @@ pre_start() {
 post_start() {
     echo "ss-tproxy 启动后执行脚本"
     logger -t "【启动多个dnsproxy - 5053,5054,5055,5056】" "完成"
+    killall dnsmasq && /usr/sbin/dnsmasq
     killall dnsproxy && dnsproxy -d -p 8053 && dnsproxy -d -p 8054 && dnsproxy -d -p 8055 && dnsproxy -d -p 8056
 }
 pre_stop() {
