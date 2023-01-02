@@ -8,7 +8,7 @@ fi
 while true; do
   instances=$(ps | grep /usr/sbin/dnsmasq | wc -l)
   echo $instances
-  [ "$instances" -le 5 ] && sleep 2 && continue
+  [ "$instances" -le 5 ] && sleep 1 && continue
   logger -s -t "dnsmasq instances > 5" "restart!"
   killall dnsmasq && /usr/sbin/dnsmasq
 done
