@@ -1,0 +1,3 @@
+打开 /etc/storage/script/sh_ss_tproxy.sh
+移除 wgetcurl_checkmd5 $tmp_down_file "$hiboyfile/accelerated-domains.china.conf" "$hiboyfile2/accelerated-domains.china.conf" N 5
+这样就精简了，只会从ss wan绕行的域名中添加dns白名单,1000多个就够了，非常快，7万个dns白名单起不到加速，反而把dnsmasq整死了，要不就换dns服务，对小白来讲太难了
