@@ -1,0 +1,2 @@
+ipv6访问Padavan路由, 加规则：
+ip6tables -A INPUT -p tcp --dport 80 -j ACCEPT
