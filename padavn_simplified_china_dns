@@ -1,3 +1,21 @@
+这个DNS加速文件在/opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
+由dnsmasq调用检索，发现查询的域名在这个列表中就直接绕行代理查询，起到加速作用。
+但是dnsmasq的查询方式很慢，随这个列表越来越大（现有7万行），会导致dnsmasq并发查询消耗大量cpu资源和内存，
+导致路由长时间卡死。
+
+精简China DNS加速列表, 临时解决方法：
 打开 /etc/storage/script/sh_ss_tproxy.sh
 移除 wgetcurl_checkmd5 $tmp_down_file "$hiboyfile/accelerated-domains.china.conf" "$hiboyfile2/accelerated-domains.china.conf" N 5
-这样就精简了，只会从ss wan绕行的域名中添加dns白名单,1000多个就够了，非常快，7万个dns白名单起不到加速，反而把dnsmasq整死了，要不就换dns服务，对小白来讲太难了
+这样就精简了，只会从ss wan绕行的域名中添加dns白名单,1000多个就够了，非常快，7万个dns白名单起不到加速，反而把dnsmasq整死了，要不就换dns服务，对小白来讲太难了!
+
+
+附加ss wan绕行常用1000多个China域名，只需添加到ss wan绕行列表中就可以了。
+[attach]594741[/attach]
+
+================================
+
+对于因为内存受限无法开启China DNS加速，解决办法：
+打开/etc/storage/script/Sh99_ss_tproxy.sh
+找到Mem_lt=200000 
+改成Mem_lt=10000 
+这样就解除必须有200M可用内存限制，有10M就够了（用精简China DNS加速列表, 临时解决方法）
