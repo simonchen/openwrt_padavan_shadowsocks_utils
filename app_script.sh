@@ -18,7 +18,7 @@ nvram set ap_time_check=0
 nvram set ap_black=0
 
 # 自定义分隔符号，默认为【@】，注意:下面配置一同修改
-nvram set ap_fenge='/'
+nvram set ap_fenge='@'
 
 # 搜寻AP排序设置【0】从第一行开始（第一行的是最优先信号）；【1】不分顺序自动连接最强信号
 nvram set ap_rule=0
