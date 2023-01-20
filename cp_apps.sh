@@ -14,17 +14,20 @@ if [[ -z "$server" || -z "$ports" || -z "$key" ]]; then
   exit 1
 fi
 
+daemon_sh="cron_$(basename $0)"
+udp2raw_sh="cron_udp.sh"
+
 ##################################################################
 #
 #  守护udp2raw
 #
 ##################################################################
-udp2raw_sh="cron_udp.sh"
 cat >/tmp/$udp2raw_sh <<'EOF'
 #!/bin/sh
 #start udp2raw
 EOF
 cat <<EOF >> /tmp/$udp2raw_sh
+daemon_sh="$daemon_sh"
 server="$server"
 ports="$ports"
 key="$key"
@@ -50,6 +53,9 @@ clear_udp2raw_port() {
   echo "" > $udp2raw_port_file
 }
 
+interval_secs=21600 # must be even number
+total_secs=0
+sleep_secs=2
 while true; do
   avail_port=  
   for port in $ports; do
@@ -78,7 +84,20 @@ while true; do
   logger -t "【启动udp2raw】" "用服务端口$avail_port"
   killall udp2raw
   /opt/bin/udp2raw --fix-gro -c -l[::1]:3333 -r$server:$avail_port -a -k "$key" --cipher-mode xor --raw-mode icmp >/dev/null 2>&1 &
-  sleep 21600
+  while true; do
+    # see if main daemon_sh is dead?
+    if [ $(ps | grep -E "[\/]$daemon_sh" | wc -l) == 0 ]; then
+      killall $daemon_sh
+      chmod +x /tmp/$daemon_sh && /tmp/$daemon_sh 2>&1 &
+    fi
+    sleep $sleep_secs
+    total_secs=$(expr $total_secs \+ $sleep_secs)
+    total_mins=$(expr $total_secs \/ 60)
+    if [ $(expr $total_secs \% $interval_secs) == 0 ]; then
+      logger -t "【udp2raw】" "已经运行$total_mins分钟, 开始切换端口."
+      break
+    fi
+  done
 done
 EOF
 
@@ -97,10 +116,10 @@ cat >/tmp/$daemon_sh <<'EOF'
 EOF
 cat <<EOF >> /tmp/$daemon_sh
 key="$key"
+udp2raw_sh="$udp2raw_sh"
 EOF
 cat >>/tmp/$daemon_sh <<'EOF'
 start_udp2raw() {
-  udp2raw_sh="cron_udp.sh"
   killall $udp2raw_sh
   chmod +x /tmp/$udp2raw_sh && /tmp/$udp2raw_sh 2>&1 &
 }
@@ -120,7 +139,7 @@ ntp_log() {
 
 total_secs=0
 sleep_secs=2
-ntp_secs=600
+ntp_secs=600 # must be even number
 
 while true
 do
@@ -136,7 +155,7 @@ do
     logger -s -t "【 本地应用守护】" "找不到/opt/bin/frpc, 重新链接!"
     ln -s /etc/storage/apps/frpc /opt/bin/frpc
   fi
-  if [ $(ps | grep -E "[u]dp2raw" | wc -l) == 0 ]; then
+  if [ $(ps | grep -E "[\/]$udp2raw_sh" | wc -l) == 0 ]; then
     logger -s -t "【 本地应用守护】" "udp2raw没有启动, 重新开始!"
     start_udp2raw
   fi
