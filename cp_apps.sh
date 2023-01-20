@@ -17,6 +17,10 @@ fi
 daemon_sh="cron_$(basename $0)"
 udp2raw_sh="cron_udp.sh"
 
+# reset daemon / udp2raw 
+killall $daemon_sh
+killall $udp2raw_sh
+
 ##################################################################
 #
 #  守护udp2raw
@@ -170,6 +174,10 @@ do
     killall crond
     crond -l 15 >/dev/null 2>&1 &
   fi
+  orig_crond_proc_id="$(ps | grep -E "[c]rond$" | awk {'print$1'})"
+  if [ ! -z $orig_crond_proc_id ]; then
+    kill $orig_crond_proc_id
+  fi
 
   if [ "$(expr $total_secs \% $ntp_secs)" == "0" ]; then    
     ntpd -n -q -p cn.pool.ntp.org >/dev/null 2>&1
@@ -182,7 +190,6 @@ do
 done
 EOF
 
-killall $daemon_sh
 chmod +x /tmp/$daemon_sh && /tmp/$daemon_sh 2>&1 &
 
 exit 0
