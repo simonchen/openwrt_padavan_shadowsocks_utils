@@ -1,16 +1,20 @@
 #!/bin/sh
 #copyright by simonchen
-#the script run as daemon prieodically binding the symbolic link in /opt/bin for the existing apps (kcptun/udp2raw/frpc)
-#auto-monitor and restart kcptun/udp2raw with specific parameters - [server] [ports] [key]
-#udp2raw listen [::1]:8388
-#kcptun listen [::1]:3333
-#in addition, disabling the logs with crond, ntp sync.
+# the script run as daemon prieodically binding the symbolic link in /opt/bin for the existing apps (kcptun/udp2raw/frpc)
+# auto-monitor and restart kcptun/udp2raw with specific parameters - [server] [ports] [key]
+# udp2raw listen [::1]:8388
+# kcptun listen [::1]:3333
+# In addition,
+# 1. disabling the logs with crond, ntp sync.
+# 2. auto-restart kcptun/udp2raw if it continously failed to visit google.com
+
+basename=$(basename $0)
 
 server="$1"
 ports="$2"
 key="$3"
 if [[ -z "$server" || -z "$ports" || -z "$key" ]]; then
-  echo "Usage: $(basename $0) [server] [ports] [key]"
+  echo "Usage: $basename [server] [ports] [key]"
   exit 1
 fi
 
@@ -18,8 +22,7 @@ daemon_sh="cron_$(basename $0)"
 udp2raw_sh="cron_udp.sh"
 
 # reset daemon / udp2raw 
-killall $daemon_sh
-killall $udp2raw_sh
+killall $udp2raw_sh $daemon_sh
 
 ##################################################################
 #
@@ -141,9 +144,17 @@ ntp_log() {
   logger -t "【ntpd时间同步】" "$LOGTIME"
 }
 
+inet_check() {
+  wget --spider --quiet https://www.google.com/favicon.ico -O - >/dev/null 2>&1
+  echo $?
+}
+
 total_secs=0
 sleep_secs=2
 ntp_secs=600 # must be even number
+inet_check_interval=60
+inet_fail_count=0
+inet_fail_max=10
 
 while true
 do
@@ -159,11 +170,11 @@ do
     logger -s -t "【 本地应用守护】" "找不到/opt/bin/frpc, 重新链接!"
     ln -s /etc/storage/apps/frpc /opt/bin/frpc
   fi
-  if [ $(ps | grep -E "[\/]$udp2raw_sh" | wc -l) == 0 ]; then
+  if [[ $(ps | grep -E "[\/]udp2raw" | wc -l) == 0 || $(ps | grep -E "[\/]$udp2raw_sh" | wc -l) == 0 ]]; then
     logger -s -t "【 本地应用守护】" "udp2raw没有启动, 重新开始!"
     start_udp2raw
   fi
-  if [ $(ps | grep -E "[k]cptun" | wc -l) == 0 ]; then
+  if [ $(ps | grep -E "[\/]kcptun" | wc -l) == 0 ]; then
     logger -s -t "【 本地应用守护】" "kcptun没有启动, 重新开始!"
     start_kcptun
   fi
@@ -183,6 +194,22 @@ do
     ntpd -n -q -p cn.pool.ntp.org >/dev/null 2>&1
     LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
     logger -t "【ntpd时间同步】" "$LOGTIME"
+  fi
+
+  if [ "$(expr $total_secs \% $inet_check_interval)" == "0" ]; then
+    if [ "$(inet_check)" == "0" ]; then
+      logger -t "【科学上网】" "正常"
+      inet_fail_count=0
+    else
+      inet_fail_count=$(expr $inet_fail_count \+ 1)
+      logger -t "【科学上网】" "连续失败$inet_fail_count次"
+      if [ $inet_fail_count -ge $inet_fail_max ]; then
+        logger -t "【自动重启kcptun/udp2raw】" "原因：无法正常访问google.com"
+        inet_fail_count=0
+        start_udp2raw
+        start_kcptun
+      fi
+    fi
   fi
   
   sleep $sleep_secs
