@@ -154,7 +154,7 @@ sleep_secs=2
 ntp_secs=600 # must be even number
 inet_check_interval=60
 inet_fail_count=0
-inet_fail_max=10
+inet_fail_max=3
 
 while true
 do
