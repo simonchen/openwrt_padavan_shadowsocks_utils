@@ -198,7 +198,7 @@ do
 
   if [ "$(expr $total_secs \% $inet_check_interval)" == "0" ]; then
     if [ "$(inet_check)" == "0" ]; then
-      logger -t "【科学上网】" "正常"
+      #logger -t "【科学上网】" "正常"
       inet_fail_count=0
     else
       inet_fail_count=$(expr $inet_fail_count \+ 1)
