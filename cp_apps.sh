@@ -145,8 +145,14 @@ ntp_log() {
 }
 
 inet_check() {
-  wget --spider --quiet https://www.google.com/favicon.ico -O - >/dev/null 2>&1
-  echo $?
+  #wget --spider --quiet https://www.google.com/favicon.ico -O - >/dev/null 2>&1
+  #echo $?
+  r=$(curl --silent --show-error --connect-timeout 5 -I https://www.google.com | grep -E "HTTP\/.+ 200 OK")
+  if [ -z "$r" ]; then
+    echo "1"
+  else
+    echo "0"
+  fi
 }
 
 total_secs=0
