@@ -7,6 +7,8 @@
 # In addition,
 # 1. disabling the logs with crond, ntp sync.
 # 2. auto-restart kcptun/udp2raw if it continously failed to visit google.com
+# 3. Replace dnsmasq with latest version 2.89
+# 4. Reboot router if internet connection fails on continuous 10 retries.
 
 basename=$(basename $0)
 
@@ -21,7 +23,7 @@ fi
 daemon_sh="cron_$(basename $0)"
 udp2raw_sh="cron_udp.sh"
 
-# reset daemon / udp2raw 
+# Reset daemon / udp2raw 
 killall $udp2raw_sh $daemon_sh
 
 ##################################################################
@@ -126,6 +128,15 @@ key="$key"
 udp2raw_sh="$udp2raw_sh"
 EOF
 cat >>/tmp/$daemon_sh <<'EOF'
+# Replace dnsmasq with latest version 2.89
+restart_dnsmasq() {
+  umount -fl /usr/sbin/dnsmasq
+  mount -o bind /etc/storage/apps/dnsmasq /usr/sbin/dnsmasq
+  killall dnsmasq
+  /usr/sbin/dnsmasq 2>&1 &
+}
+restart_dnsmasq
+
 start_udp2raw() {
   killall $udp2raw_sh
   chmod +x /tmp/$udp2raw_sh && /tmp/$udp2raw_sh 2>&1 &
@@ -160,7 +171,7 @@ sleep_secs=2
 ntp_secs=600 # must be even number
 inet_check_interval=60
 inet_fail_count=0
-inet_fail_max=3
+inet_fail_max=3 # this value will be increased on restart
 
 while true
 do
@@ -206,14 +217,22 @@ do
     if [ "$(inet_check)" == "0" ]; then
       #logger -t "【科学上网】" "正常"
       inet_fail_count=0
+      inet_fail_max=3
     else
       inet_fail_count=$(expr $inet_fail_count \+ 1)
       logger -t "【科学上网】" "连续失败$inet_fail_count次"
       if [ $inet_fail_count -ge $inet_fail_max ]; then
-        logger -t "【自动重启kcptun/udp2raw】" "原因：无法正常访问google.com"
         inet_fail_count=0
-        start_udp2raw
-        start_kcptun
+	if [ $inet_fail_max -ge 10 ]; then
+	  logger -t "【重启路由器】" "尝试连接google.com失败, 达到连续失败次数$inet_fail_max"
+	  reboot
+	else
+	  logger -t "【自动重启kcptun/udp2raw】" "原因：无法正常访问google.com"
+	  restart_dnsmasq
+          start_udp2raw
+	  start_kcptun
+	fi
+	inet_fail_max=$(expr $inet_fail_max \+ 1) # max failures increased by 1
       fi
     fi
   fi
