@@ -1,7 +1,21 @@
-## How to resolve "File not found"?
-Please replace "/scripts' with $document_root 
+## Setting User & group in /opt/etc/php8-fpm.d/www.conf
 <pre>
-        # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+; Unix user/group of processes
+; Note: The user is mandatory. If the group is not set, the default user's group
+;       will be used.
+user = admin
+group = root
+</pre>
+
+## Starting php8-fpm
+<pre>
+php8-fpm -R -y /opt/etc/php8-fpm.d/www.conf
+</pre>
+
+## How to resolve "File not found"?
+If you use fast-cgi to process php file, please replace `/scripts` with `$document_root` in `/opt/etc/php.ini`
+<pre>
+        # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9001
         #
         location ~ \.php$ {
             root           /home/root/www;
