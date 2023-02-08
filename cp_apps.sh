@@ -8,7 +8,7 @@
 # 1. disabling the logs with crond, ntp sync.
 # 2. auto-restart kcptun/udp2raw if it continously failed to visit google.com
 # 3. Replace dnsmasq with latest version 2.89
-# 4. Reboot router if internet connection fails on continuous 10 retries.
+# 4. Restart WAN if internet connection fails with continuous 10 retries.
 
 basedir=$(cd $(dirname $0) && pwd)
 basename=$(basename $0)
@@ -179,6 +179,87 @@ daemon_sub_status="$daemon_sub_status"
 EOF
 cat >>/tmp/$daemon_sh <<'EOF'
 
+
+# LED control
+
+y=13 #d3
+r=14 #d1
+b=16 #sys
+
+timer() {
+  $(for i in $(seq 1 1000); do i=$i; done) 
+}
+
+led_state() {
+  led=$1
+  echo $(mtk_gpio -r $led | sed -E 's/gpio[^\=]+\= ([0-9]+)/\1/')
+}
+
+led_red_state() {
+  if [ "$(led_state $r)" -eq "0" ]; then
+    echo "on"
+  else
+    echo "off"
+  fi
+}
+
+led_yellow_state() {
+  if [ "$(led_state $y)" -eq "0" ]; then
+    echo "on"
+  else
+    echo "off"
+  fi
+}
+
+led_blue_state() {
+  if [ "$(led_state $b)" -eq "0" ]; then
+    echo "on"
+  else
+    echo "off"
+  fi
+}
+
+blink() {
+  led=$1
+  times=2
+  restore=1
+  if [ ! -z "$2" ]; then
+    times=$2
+  fi
+  if [ ! -z "$3" ]; then
+    restore=$3
+  fi
+
+  led_y=$(led_state $y)
+  led_r=$(led_state $r)
+  led_b=$(led_state $b)
+  
+  mtk_gpio -w $r 1 && mtk_gpio -w $b 1 && mtk_gpio -w $y 1
+  for i in $(seq 1 $times); do
+    #echo blink="$i"
+    mtk_gpio -w $led 1
+    timer
+    mtk_gpio -w $led 0
+    timer
+  done
+
+  if [ "$restore" == "1" ]; then
+    mtk_gpio -w $r $led_r && mtk_gpio -w $b $led_b && mtk_gpio -w $y $led_y
+  fi
+}
+
+blink_yellow() {
+  blink $y "$1" "$2"
+}
+
+blink_red() {
+  blink $r "$1" "$2"
+}
+
+blink_blue() {
+  blink $b "$1" "$2"
+}
+
 read_total_secs() {
   s=""
   if [ -f "/tmp/$daemon_status" ]; then
@@ -287,17 +368,23 @@ while true; do
   if [ "$(expr $total_secs \% $inet_check_interval)" -eq "0" ]; then
     if [ "$(inet_check)" -eq "0" ]; then
       if [ $inet_fail_count -ge 1 ]; then
+        blink_blue 10 0
         logger -t "【科学上网】" "恢复正常"
+      fi
+      if [ "$(led_blue_state)" == "off" ]; then
+        blink_blue 1 0
       fi
       inet_fail_count=0
       inet_fail_max=3
     else
       inet_fail_count=$(expr $inet_fail_count \+ 1)
       logger -t "【科学上网】" "连续失败$inet_fail_count次"
+      blink_yellow 10 0
       if [ $inet_fail_count -ge $inet_fail_max ]; then
         inet_fail_count=0
 	if [ $inet_fail_max -ge 10 ]; then
 	  logger -t "【重启WAN】" "尝试连接google.com失败, 达到连续失败次数$inet_fail_max"
+	  blink_red 10 0
 	  restart_wan
 	else
 	  logger -t "【自动重启kcptun/udp2raw】" "原因：无法正常访问google.com"
