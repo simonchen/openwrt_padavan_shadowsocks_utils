@@ -225,7 +225,7 @@ do
         inet_fail_count=0
 	if [ $inet_fail_max -ge 10 ]; then
 	  logger -t "【重启路由器】" "尝试连接google.com失败, 达到连续失败次数$inet_fail_max"
-	  reboot
+	  restart_wan
 	else
 	  logger -t "【自动重启kcptun/udp2raw】" "原因：无法正常访问google.com"
 	  restart_dnsmasq
