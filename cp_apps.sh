@@ -21,14 +21,13 @@ if [[ -z "$server" || -z "$ports" || -z "$key" ]]; then
   exit 1
 fi
 
-myname="padavan"
-daemon_sh="$myname-d.sh"
-daemon_status="$myname-d.status"
-daemon_sub_sh="$myname-ds.sh"
-daemon_sub_status="$myname-ds.status"
+daemon_sh="padavan-d.sh"
+daemon_status="padavan-d.status"
+daemon_sub_sh="padavan-ds.sh"
+daemon_sub_status="padavan-ds.status"
 
 # Reset daemon 
-pgrep $myname | xargs kill >/dev/nulll 2>&1 
+pgrep padavan | xargs kill >/dev/nulll 2>&1 
 rm -f /tmp/$daemon_sub_status 
 rm -f /tmp/$daemon_status
 
@@ -335,15 +334,29 @@ while true; do
     logger -s -t "【 本地应用守护】" "找不到/opt/bin/udp2raw, 重新链接!"
     ln -s $basedir/udp2raw /opt/bin/udp2raw
   fi
-  if [ -z "$(pgrep udp2raw)" ]; then
+
+  kcptun=
+  udp2raw=
+  ssredir=
+  nginx=
+  php8fmp=
+  padavand=
+  padavands=
+  ttyd=
+  mtd_write=
+  mtd_storage=
+
+  eval `ps | awk '/udp2raw/ || /kcptun/ || /ss-redir/ || /nginx/ || /php8-fpm/p || /padavan-d.sh/ || /padavan-ds.sh/ || /ttyd/ || /mtd_write/ || /mtd_storage/ {print $5"="$1}' | sed -E 's/\{(.+)\}/\1/' | sed -E 's/\[(.+)\]/\1/' | sed -E 's/\/.*\/|[^0-9a-zA-Z\=]//' | sed -E 's/.sh//' | grep -v 'awk'`
+
+  if [ -z "$udp2raw" ]; then
     logger -s -t "【 本地应用守护】" "udp2raw没有启动, 重新开始!"
     start_sub_daemon
   fi
-  if [ -z "$(pgrep $daemon_sub_sh)" ]; then
+  if [ -z "$padavands" ]; then
     logger -s -t "【 sub-daemon 本地应用守护】" "没有启动, 重新开始!"
     start_sub_daemon
   fi
-  if [ -z "$(pgrep kcptun)" ]; then
+  if [ -z "$kcptun" ]; then
     logger -s -t "【 本地应用守护】" "kcptun没有启动, 重新开始!"
     start_kcptun
   fi
@@ -382,7 +395,7 @@ while true; do
       blink_yellow 10 0
       if [ $inet_fail_count -ge $inet_fail_max ]; then
         inet_fail_count=0
-	if [ $inet_fail_max -ge 10 ]; then
+	if [ $inet_fail_max -ge 6 ]; then
 	  logger -t "【重启WAN】" "尝试连接google.com失败, 达到连续失败次数$inet_fail_max"
 	  blink_red 10 0
 	  restart_wan
