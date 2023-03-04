@@ -404,7 +404,7 @@ while true; do
   mtdwrite=
   mtdstorage=
 
-  eval `ps | awk '/udp2raw/ || /kcptun/ || /ss-redir/ || /nginx/ || /php8-fpm/p || /padavan-d.sh/ || /padavan-ds.sh/ || /ttyd/ || /mtd_write/ || /mtd_storage/ {print $5"="$1}' | sed -E 's/\{(.+)\}/\1/' | sed -E 's/\[(.+)\]/\1/' | sed -E 's/(\s|\-|_)//' | sed -E 's/\/.*\///' | sed -E 's/.sh//' | grep -v 'awk'`
+  eval `ps | awk '/udp2raw/ || /kcptun/ || /ss-redir/ || /nginx/ || /php8-fpm/p || /padavan-d.sh/ || /padavan-ds.sh/ || /ttyd/ || /mtd_write/ || /mtd_storage/ {print $5"="$1}' | sed -E 's/\{(.+)\}/\1/' | sed -E 's/\[(.+)\]/\1/' | sed -E 's/( |\-|_)//' | sed -E 's/\/.*\///' | sed -E 's/.sh//' | grep -v 'awk'`
 
   if [ -z "$udp2raw" ]; then
     logger -s -t "【 本地应用守护】" "udp2raw没有启动, 重新开始!"
