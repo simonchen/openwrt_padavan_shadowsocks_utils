@@ -141,14 +141,17 @@ while true; do
       chmod +x /tmp/$daemon_sh && /tmp/$daemon_sh 2>&1 &
     fi
     sleep $sleep_secs
-    total_secs=$(expr $total_secs \+ $sleep_secs)
-    $(write_total_secs $total_secs)
-    total_mins=$(expr $total_secs \/ 60)
-    if [ $(expr $total_secs \% $interval_secs) -eq 0 ]; then
+    total_secs=$(($total_secs+$sleep_secs))
+    if [ -z "$total_secs" ]; then
+      total_secs=0
+    fi
+    write_total_secs "$total_secs"
+    total_mins=$(($total_secs/60))
+    if [ $(($total_secs % $interval_secs)) -eq 0 ]; then
       logger -t "【udp2raw】" "已经运行$total_mins分钟, 开始切换端口."
       break
     fi
-    if [[ $(expr $total_secs \% $selfkill_secs) -eq 0 && ! -z "$(pgrep $daemon_sh)" ]]; then
+    if [[ $(($total_secs % $selfkill_secs)) -eq 0 && ! -z "$(pgrep $daemon_sh)" ]]; then
       logger -t "【sub-daemon守护】" "已经运行$total_mins分钟, 自重启."
       killall $daemon_sub_sh >/dev/null 2>&1
     fi
@@ -295,7 +298,7 @@ start_kcptun() {
     return
   fi
   killall kcptun >/dev/null 2>&1
-  /opt/bin/kcptun -conn 4 -sockbuf 8388608 -l [::1]:8388 -r "[::1]:3333" -l ":8388" -key "$key" -mtu 1350 -sndwnd 192 -rcvwnd 900 -crypt xor -mode fast3 -dscp 0 -datashard 0 -parityshard 0 -autoexpire 0 -nocomp  >/dev/null 2>&1 &
+  /opt/bin/kcptun -conn 4 -sockbuf 1048576 -l [::1]:8388 -r "[::1]:3333" -l ":8388" -key "$key" -mtu 1350 -sndwnd 192 -rcvwnd 900 -crypt xor -mode fast3 -dscp 0 -datashard 0 -parityshard 0 -autoexpire 0 -nocomp  >/dev/null 2>&1 &
 }
 
 ntp_log() {
@@ -333,6 +336,10 @@ while true; do
   if [[ ! -f "/opt/bin/udp2raw" && -f "$basedir/udp2raw" ]]; then  
     logger -s -t "【 本地应用守护】" "找不到/opt/bin/udp2raw, 重新链接!"
     ln -s $basedir/udp2raw /opt/bin/udp2raw
+  fi
+  if [[ ! -f "/opt/bin/frpc" && -f "$basedir/frpc" ]]; then  
+    logger -s -t "【 本地应用守护】" "找不/frpc, 重新链接!"
+    ln -s $basedir/frpc /opt/bin/frpc
   fi
 
   kcptun=
@@ -372,13 +379,13 @@ while true; do
     kill $orig_crond_proc_id
   fi
 
-  if [ "$(expr $total_secs \% $ntp_secs)" -eq "0" ]; then    
+  if [ "$(($total_secs % $ntp_secs))" -eq "0" ]; then    
     ntpd -n -q -p cn.pool.ntp.org >/dev/null 2>&1
     LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
     logger -t "【ntpd时间同步】" "$LOGTIME"
   fi
 
-  if [ "$(expr $total_secs \% $inet_check_interval)" -eq "0" ]; then
+  if [ "$(($total_secs % $inet_check_interval))" -eq "0" ]; then
     if [ "$(inet_check)" -eq "0" ]; then
       if [ $inet_fail_count -ge 1 ]; then
         blink_blue 10 0
@@ -390,7 +397,7 @@ while true; do
       inet_fail_count=0
       inet_fail_max=3
     else
-      inet_fail_count=$(expr $inet_fail_count \+ 1)
+      inet_fail_count=$(($inet_fail_count+1))
       logger -t "【科学上网】" "连续失败$inet_fail_count次"
       blink_yellow 10 0
       if [ $inet_fail_count -ge $inet_fail_max ]; then
@@ -405,16 +412,19 @@ while true; do
           start_sub_daemon
 	  start_kcptun
 	fi
-	inet_fail_max=$(expr $inet_fail_max \+ 1) # max failures increased by 1
+	inet_fail_max=$(($inet_fail_max+1)) # max failures increased by 1
       fi
     fi
   fi
   
   sleep $sleep_secs
-  total_secs=$(expr $total_secs \+ $sleep_secs)
-  $(write_total_secs $total_secs)
-  if [[ $(expr $total_secs \% $selfkill_secs) -eq 0 && ! -z "$(pgrep $daemon_sub_sh)" ]]; then
-    total_mins=$(expr $total_secs \/ 60)
+  total_secs=$(($total_secs+$sleep_secs))
+  if [ -z "$total_secs" ]; then
+    total_secs=0
+  fi
+  write_total_secs "$total_secs"
+  if [[ $(($total_secs % $selfkill_secs)) -eq 0 && ! -z "$(pgrep $daemon_sub_sh)" ]]; then
+    total_mins=$(($total_secs/60))
     logger -t "【main-daemon守护】" "已经运行$total_mins分钟, 自重启."
     killall $daemon_sh >/dev/null 2>&1
   fi
@@ -427,3 +437,4 @@ chmod +x /tmp/$daemon_sh && /tmp/$daemon_sh 2>&1 &
 restart_dnsmasq
 
 exit 0
+
