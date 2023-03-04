@@ -27,7 +27,7 @@ daemon_sub_sh="padavan-ds.sh"
 daemon_sub_status="padavan-ds.status"
 
 # Reset daemon 
-pgrep padavan | xargs kill >/dev/nulll 2>&1 
+ps | grep padavan | grep -v grep | awk '{print $1}' | xargs kill >/dev/nulll 2>&1 
 rm -f /tmp/$daemon_sub_status 
 rm -f /tmp/$daemon_status
 
@@ -129,14 +129,14 @@ while true; do
     continue
   fi
   #echo "avail_port="$avail_port
-  if [[ -z "$(pgrep udp2raw)" && -f "/opt/bin/udp2raw" ]]; then
+  if [[ -z "$(ps | grep udp2raw)" && -f "/opt/bin/udp2raw" ]]; then
     logger -t "【启动udp2raw】" "用服务端口$avail_port"
     killall udp2raw >/dev/null 2>&1 
     /opt/bin/udp2raw --fix-gro -c -l[::1]:3333 -r$server:$avail_port -a -k "$key" --cipher-mode xor --raw-mode icmp >/dev/null 2>&1 &
   fi
   while true; do
     # see if main daemon_sh is dead?
-    if [ -z "$(pgrep $daemon_sh)" ]; then
+    if [ -z "$(ps | grep $daemon_sh)" ]; then
       killall $daemon_sh >/dev/null 2>&1
       chmod +x /tmp/$daemon_sh && /tmp/$daemon_sh 2>&1 &
     fi
@@ -151,7 +151,7 @@ while true; do
       logger -t "【udp2raw】" "已经运行$total_mins分钟, 开始切换端口."
       break
     fi
-    if [[ $(($total_secs % $selfkill_secs)) -eq 0 && ! -z "$(pgrep $daemon_sh)" ]]; then
+    if [[ $(($total_secs % $selfkill_secs)) -eq 0 && ! -z "$(ps | grep $daemon_sh)" ]]; then
       logger -t "【sub-daemon守护】" "已经运行$total_mins分钟, 自重启."
       killall $daemon_sub_sh >/dev/null 2>&1
     fi
@@ -181,6 +181,8 @@ daemon_sub_status="$daemon_sub_status"
 EOF
 cat >>/tmp/$daemon_sh <<'EOF'
 
+# linux version
+LV=$(uname -r | awk -F '.' '{print $1}')
 
 # LED control
 
@@ -192,9 +194,37 @@ timer() {
   $(for i in $(seq 1 1000); do i=$i; done) 
 }
 
+led_alias() {
+    local led=$1
+    case "$led" in
+	13)
+	led="green"
+	;;
+	14)
+	led="red"
+	;;
+	16)
+	led="blue"
+	;;
+      *)
+      led="green"
+    esac
+    echo "$led"
+}
+
 led_state() {
-  led=$1
-  echo $(mtk_gpio -r $led | sed -E 's/gpio[^\=]+\= ([0-9]+)/\1/')
+  local led=$1
+  if [ "$((LV>3))" -eq "1" ]; then
+    led=$(led_alias $led)
+    state=$(cat /sys/class/leds/$led\:status/brightness)
+    if [ "$state" -eq "0" ]; then
+      echo "1"
+    else
+      echo "0"
+    fi
+  else
+    echo $(mtk_gpio -r $led | sed -E 's/gpio[^\=]+\= ([0-9]+)/\1/')
+  fi
 }
 
 led_red_state() {
@@ -221,8 +251,25 @@ led_blue_state() {
   fi
 }
 
+led_set() {
+  local led=$1
+  val=$2
+
+  if [ "$((LV>3))" -eq "1" ]; then
+    led=$(led_alias $led)
+    if [ "$val" -eq "0" ]; then
+      val=1
+    else
+      val=0
+    fi
+    echo $val > /sys/class/leds/$led\:status/brightness
+  else
+    mtk_gpio -w $led $val
+  fi
+}
+
 blink() {
-  led=$1
+  local led=$1
   times=2
   restore=1
   if [ ! -z "$2" ]; then
@@ -236,17 +283,17 @@ blink() {
   led_r=$(led_state $r)
   led_b=$(led_state $b)
   
-  mtk_gpio -w $r 1 && mtk_gpio -w $b 1 && mtk_gpio -w $y 1
+  led_set $r 1 && led_set $b 1 && led_set $y 1
   for i in $(seq 1 $times); do
     #echo blink="$i"
-    mtk_gpio -w $led 1
+    led_set $led 1
     timer
-    mtk_gpio -w $led 0
+    led_set $led 0
     timer
   done
 
   if [ "$restore" == "1" ]; then
-    mtk_gpio -w $r $led_r && mtk_gpio -w $b $led_b && mtk_gpio -w $y $led_y
+    led_set $r $led_r && led_set $b $led_b && led_set $y $led_y
   fi
 }
 
@@ -260,6 +307,10 @@ blink_red() {
 
 blink_blue() {
   blink $b "$1" "$2"
+}
+
+write_led_status() {
+  echo "$1" > /tmp/padavan_led_status
 }
 
 read_total_secs() {
@@ -290,7 +341,7 @@ restart_dnsmasq() {
 
 start_sub_daemon() {
   killall $daemon_sub_sh >/dev/null 2>&1
-  chmod +x /tmp/$daemon_sub_sh && /tmp/$daemon_sub_sh 2>&1 &
+  chmod +x /tmp/$daemon_sub_sh && /tmp/$daemon_sub_sh >/dev/null 2>&1 &
 }
 
 start_kcptun() {
@@ -337,10 +388,10 @@ while true; do
     logger -s -t "【 本地应用守护】" "找不到/opt/bin/udp2raw, 重新链接!"
     ln -s $basedir/udp2raw /opt/bin/udp2raw
   fi
-  if [[ ! -f "/opt/bin/frpc" && -f "$basedir/frpc" ]]; then  
-    logger -s -t "【 本地应用守护】" "找不/frpc, 重新链接!"
-    ln -s $basedir/frpc /opt/bin/frpc
-  fi
+  #if [[ ! -f "/opt/bin/frpc" && -f "$basedir/frpc" ]]; then  
+  #  logger -s -t "【 本地应用守护】" "找不/frpc, 重新链接!"
+  #  ln -s $basedir/frpc /opt/bin/frpc
+  #fi
 
   kcptun=
   udp2raw=
@@ -350,10 +401,10 @@ while true; do
   padavand=
   padavands=
   ttyd=
-  mtd_write=
-  mtd_storage=
+  mtdwrite=
+  mtdstorage=
 
-  eval `ps | awk '/udp2raw/ || /kcptun/ || /ss-redir/ || /nginx/ || /php8-fpm/p || /padavan-d.sh/ || /padavan-ds.sh/ || /ttyd/ || /mtd_write/ || /mtd_storage/ {print $5"="$1}' | sed -E 's/\{(.+)\}/\1/' | sed -E 's/\[(.+)\]/\1/' | sed -E 's/(\s|\-)//' | sed -E 's/\/.*\///' | sed -E 's/.sh//' | grep -v 'awk'`
+  eval `ps | awk '/udp2raw/ || /kcptun/ || /ss-redir/ || /nginx/ || /php8-fpm/p || /padavan-d.sh/ || /padavan-ds.sh/ || /ttyd/ || /mtd_write/ || /mtd_storage/ {print $5"="$1}' | sed -E 's/\{(.+)\}/\1/' | sed -E 's/\[(.+)\]/\1/' | sed -E 's/(\s|\-|_)//' | sed -E 's/\/.*\///' | sed -E 's/.sh//' | grep -v 'awk'`
 
   if [ -z "$udp2raw" ]; then
     logger -s -t "【 本地应用守护】" "udp2raw没有启动, 重新开始!"
@@ -377,6 +428,11 @@ while true; do
   orig_crond_proc_id="$(ps | grep -E "[c]rond$" | awk {'print$1'})"
   if [ ! -z "$orig_crond_proc_id" ]; then
     kill $orig_crond_proc_id
+  fi
+
+  if [[ ! -z "$mtdwrite" || ! -z "$mtdstorage" ]]; then
+    write_led_status "blue_flash"
+    blink_blue 10
   fi
 
   if [ "$(($total_secs % $ntp_secs))" -eq "0" ]; then    
@@ -423,7 +479,7 @@ while true; do
     total_secs=0
   fi
   write_total_secs "$total_secs"
-  if [[ $(($total_secs % $selfkill_secs)) -eq 0 && ! -z "$(pgrep $daemon_sub_sh)" ]]; then
+  if [[ $(($total_secs % $selfkill_secs)) -eq 0 && ! -z "$(ps | grep $daemon_sub_sh)" ]]; then
     total_mins=$(($total_secs/60))
     logger -t "【main-daemon守护】" "已经运行$total_mins分钟, 自重启."
     killall $daemon_sh >/dev/null 2>&1
