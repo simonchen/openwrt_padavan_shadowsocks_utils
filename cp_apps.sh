@@ -136,7 +136,8 @@ while true; do
   fi
   while true; do
     # see if main daemon_sh is dead?
-    if [ -z "$(ps | grep $daemon_sh)" ]; then
+    if [ -z "$(ps | grep $daemon_sh | grep -v grep)" ]; then
+      logger -s -t "【 main-daemon 本地应用守护】" "没有启动, 重新开始!"
       killall $daemon_sh >/dev/null 2>&1
       chmod +x /tmp/$daemon_sh && /tmp/$daemon_sh 2>&1 &
     fi
@@ -151,7 +152,7 @@ while true; do
       logger -t "【udp2raw】" "已经运行$total_mins分钟, 开始切换端口."
       break
     fi
-    if [[ $(($total_secs % $selfkill_secs)) -eq 0 && ! -z "$(ps | grep $daemon_sh)" ]]; then
+    if [[ $(($total_secs % $selfkill_secs)) -eq 0 && ! -z "$(ps | grep $daemon_sh) | grep -v grep" ]]; then
       logger -t "【sub-daemon守护】" "已经运行$total_mins分钟, 自重启."
       killall $daemon_sub_sh >/dev/null 2>&1
     fi
@@ -479,7 +480,7 @@ while true; do
     total_secs=0
   fi
   write_total_secs "$total_secs"
-  if [[ $(($total_secs % $selfkill_secs)) -eq 0 && ! -z "$(ps | grep $daemon_sub_sh)" ]]; then
+  if [[ $(($total_secs % $selfkill_secs)) -eq 0 && ! -z "$(ps | grep $daemon_sub_sh | grep -v grep)" ]]; then
     total_mins=$(($total_secs/60))
     logger -t "【main-daemon守护】" "已经运行$total_mins分钟, 自重启."
     killall $daemon_sh >/dev/null 2>&1
