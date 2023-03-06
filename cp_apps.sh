@@ -129,7 +129,7 @@ while true; do
     continue
   fi
   #echo "avail_port="$avail_port
-  if [[ -z "$(ps | grep udp2raw)" && -f "/opt/bin/udp2raw" ]]; then
+  if [[ -z "$(ps | grep udp2raw | grep -v grep)" && -f "/opt/bin/udp2raw" ]]; then
     logger -t "【启动udp2raw】" "用服务端口$avail_port"
     killall udp2raw >/dev/null 2>&1 
     /opt/bin/udp2raw --fix-gro -c -l[::1]:3333 -r$server:$avail_port -a -k "$key" --cipher-mode xor --raw-mode icmp >/dev/null 2>&1 &
