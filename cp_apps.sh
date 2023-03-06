@@ -26,6 +26,8 @@ daemon_status="padavan-d.status"
 daemon_sub_sh="padavan-ds.sh"
 daemon_sub_status="padavan-ds.status"
 
+mkdir -p /opt/bin
+
 # Reset daemon 
 ps | grep padavan | grep -v grep | awk '{print $1}' | xargs kill >/dev/nulll 2>&1 
 rm -f /tmp/$daemon_sub_status 
