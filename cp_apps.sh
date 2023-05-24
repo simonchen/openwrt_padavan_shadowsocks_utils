@@ -143,7 +143,7 @@ while true; do
       killall $daemon_sh >/dev/null 2>&1
       chmod +x /tmp/$daemon_sh && /tmp/$daemon_sh 2>&1 &
     fi
-    if [ $(pgrep -x $daemon_sh | grep -v grep | wc -l) -gt "1" ]; then
+    if [ $(pgrep -x $daemon_sh | grep -v grep | wc -l) -gt 1 ]; then
       logger -s -t "【 main-daemon 本地应用守护】" "检测到多个实例启动, 重新开始!"
       killall $daemon_sh >/dev/null 2>&1
       chmod +x /tmp/$daemon_sh && /tmp/$daemon_sh 2>&1 &
