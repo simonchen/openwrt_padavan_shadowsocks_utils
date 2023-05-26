@@ -143,7 +143,7 @@ while true; do
       killall $daemon_sh >/dev/null 2>&1
       chmod +x /tmp/$daemon_sh && /tmp/$daemon_sh 2>&1 &
     fi
-    if [ $(top -n 1 | grep $daemon_sh | awk '{print $8}') -gt 10 ]; then
+    if [ $(top -n 1 | grep $daemon_sh | awk '{print $8}' | awk -F. '{print $1}') -gt 10 ]; then
       logger -s -t "【 main-daemon 本地应用守护】" "CPU占用率异常, 重新开始!"
       killall $daemon_sh >/dev/null 2>&1
       chmod +x /tmp/$daemon_sh && /tmp/$daemon_sh 2>&1 &
