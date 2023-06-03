@@ -423,6 +423,11 @@ while true; do
     logger -s -t "【 sub-daemon 本地应用守护】" "没有启动, 重新开始!"
     start_sub_daemon
   fi
+  if [ $(top -n 1 | grep $daemon_sub_sh | awk '{print $8}' | awk -F. '{print $1}') -gt 10 ]; then
+    logger -s -t "【sub-daemon 本地应用守护】" "CPU占用率异常, 重新开始!"
+    killall $daemon_sub_sh >/dev/null 2>&1
+    chmod +x /tmp/$daemon_sub_sh && /tmp/$daemon_sub_sh 2>&1 &
+  fi
   if [ -z "$kcptun" ]; then
     logger -s -t "【 本地应用守护】" "kcptun没有启动, 重新开始!"
     start_kcptun
