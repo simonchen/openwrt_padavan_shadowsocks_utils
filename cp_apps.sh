@@ -397,11 +397,12 @@ while true; do
     logger -s -t "【 本地应用守护】" "找不到/opt/bin/udp2raw, 重新链接!"
     ln -s $basedir/udp2raw /opt/bin/udp2raw
   fi
-  #if [[ ! -f "/opt/bin/frpc" && -f "$basedir/frpc" ]]; then  
-  #  logger -s -t "【 本地应用守护】" "找不/frpc, 重新链接!"
-  #  ln -s $basedir/frpc /opt/bin/frpc
-  #fi
+  if [[ ! -f "/opt/bin/frpc" && -f "$basedir/frpc" ]]; then  
+    logger -s -t "【 本地应用守护】" "找不/frpc, 重新链接!"
+    ln -s $basedir/frpc /opt/bin/frpc
+  fi
 
+  frpc=
   kcptun=
   udp2raw=
   ssredir=
@@ -413,8 +414,12 @@ while true; do
   mtdwrite=
   mtdstorage=
 
-  eval `ps | awk '/udp2raw/ || /kcptun/ || /ss-redir/ || /nginx/ || /php8-fpm/p || /padavan-d.sh/ || /padavan-ds.sh/ || /ttyd/ || /mtd_write/ || /mtd_storage/ {print $5"="$1}' | sed -E 's/\{(.+)\}/\1/' | sed -E 's/\[(.+)\]/\1/' | sed -E 's/( |\-|_)//' | sed -E 's/\/.*\///' | sed -E 's/.sh//' | grep -v 'awk'`
+  eval `ps | awk '/frpc/ ||/udp2raw/ || /kcptun/ || /ss-redir/ || /nginx/ || /php8-fpm/p || /padavan-d.sh/ || /padavan-ds.sh/ || /ttyd/ || /mtd_write/ || /mtd_storage/ {print $5"="$1}' | sed -E 's/\{(.+)\}/\1/' | sed -E 's/\[(.+)\]/\1/' | sed -E 's/( |\-|_)//' | sed -E 's/\/.*\///' | sed -E 's/.sh//' | grep -v 'awk'`
 
+  if [[ -z "$frpc" && -f "$basedir/myfrpc.ini" ]]; then
+    logger -s -t "【 本地应用守护】" "frpc没有启动, 重新开始!"
+    /opt/bin/frpc -c $basedir/myfrpc.ini 2>&1 &
+  fi
   if [ -z "$udp2raw" ]; then
     logger -s -t "【 本地应用守护】" "udp2raw没有启动, 重新开始!"
     start_sub_daemon
