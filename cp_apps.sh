@@ -414,10 +414,11 @@ while true; do
   mtdwrite=
   mtdstorage=
 
-  eval `ps | awk '/frpc/ ||/udp2raw/ || /kcptun/ || /ss-redir/ || /nginx/ || /php8-fpm/p || /padavan-d.sh/ || /padavan-ds.sh/ || /ttyd/ || /mtd_write/ || /mtd_storage/ {print $5"="$1}' | sed -E 's/\{(.+)\}/\1/' | sed -E 's/\[(.+)\]/\1/' | sed -E 's/( |\-|_)//' | sed -E 's/\/.*\///' | sed -E 's/.sh//' | grep -v 'awk'`
+  eval `ps | awk '/frpc/ || /udp2raw/ || /kcptun/ || /ss-redir/ || /nginx/ || /php8-fpm/p || /padavan-d.sh/ || /padavan-ds.sh/ || /ttyd/ || /mtd_write/ || /mtd_storage/ {print $5"="$1}' | sed -E 's/\{(.+)\}/\1/' | sed -E 's/\[(.+)\]/\1/' | sed -E 's/( |\-|_)//' | sed -E 's/\/.*\///' | sed -E 's/.sh//' | grep -v 'awk'`
 
   if [[ -z "$frpc" && -f "$basedir/myfrpc.ini" ]]; then
     logger -s -t "【 本地应用守护】" "frpc没有启动, 重新开始!"
+    killall frpc >/dev/null 2>&1
     /opt/bin/frpc -c $basedir/myfrpc.ini 2>&1 &
   fi
   if [ -z "$udp2raw" ]; then
