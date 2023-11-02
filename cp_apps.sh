@@ -57,7 +57,7 @@ logger -s -t "【 sub-daemon 本地应用守护】" "启动"
 basedir="$basedir"
 daemon_sh="$daemon_sh"
 daemon_status="$daemon_status"
-daemon_sub_sh="daemon_sub_sh"
+daemon_sub_sh="$daemon_sub_sh"
 daemon_sub_status="$daemon_sub_status"
 
 server="$server"
@@ -492,7 +492,13 @@ while true; do
       fi
     fi
   fi
-  
+
+  if [ $(top -n 1 | grep $daemon_sub_sh | awk '{print $8}' | awk -F. '{print $1}') -gt 10 ]; then
+    logger -s -t "【 sub-daemon 本地应用守护】" "CPU占用率异常, 重新开始!"
+    killall $daemon_sub_sh >/dev/null 2>&1
+    chmod +x /tmp/$daemon_sub_sh && /tmp/$daemon_sub_sh 2>&1 &
+  fi
+    
   sleep $sleep_secs
   total_secs=$(($total_secs+$sleep_secs))
   if [ -z "$total_secs" ]; then
