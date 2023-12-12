@@ -17,7 +17,7 @@ echo network is $ok
 if [ $ok == 1 ]; then
         echo '['$LOGTIME'] No Problem.'
         echo 'check print service port 9100'
-        net_port=$(netstat -a | grep "9100")
+        net_port=$(netstat -an | grep "9100")
         echo "$net_port"
         if [ -z "$net_port" ]; then
                 echo "print service was down. restarting..."
