@@ -1,7 +1,6 @@
 #!/bin/sh
-# detecting if the child router is disconnected from parent router with http://192.168.0.1
-#!/bin/sh
-# detecting if the child router is disconnected from parent router
+# detects if the child router is disconnected from parent router,
+# running this script in your cronjob.
 
 LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
 ok=0
